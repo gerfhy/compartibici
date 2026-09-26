@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using CompartiBici.Data;
 using CompartiBici.Models;
 
@@ -8,22 +10,66 @@ namespace CompartiBici.Controllers;
 public class OperacionesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IDistributedCache _cache;
     private readonly ILogger<OperacionesController> _logger;
 
-    public OperacionesController(ApplicationDbContext context, ILogger<OperacionesController> logger)
+    private const string CacheKeyListado = "incidencias_abiertas_listado";
+
+    public OperacionesController(
+        ApplicationDbContext context,
+        IDistributedCache cache,
+        ILogger<OperacionesController> logger)
     {
         _context = context;
+        _cache = cache;
         _logger = logger;
     }
 
     // GET: /Operaciones/Incidencias
     public async Task<IActionResult> Incidencias()
     {
-        var incidencias = await _context.Incidencias
-            .Where(i => i.Estado == "Abierta")
-            .OrderByDescending(i => i.FechaRegistro)
-            .ToListAsync();
+        List<Incidencia>? incidencias = null;
+        string origen = "BASE DE DATOS";
 
+        // 1. Intentar obtener el listado desde la caché de Redis
+        var cachedData = await _cache.GetStringAsync(CacheKeyListado);
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            try
+            {
+                incidencias = JsonSerializer.Deserialize<List<Incidencia>>(cachedData);
+                if (incidencias != null)
+                {
+                    origen = "REDIS (CACHÉ)";
+                    _logger.LogInformation(">>> [CACHE HIT] Incidencias obtenidas desde REDIS (Clave: {Clave}) con {Count} registros", CacheKeyListado, incidencias.Count);
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Error al deserializar la caché de Redis. Se consultará la base de datos.");
+            }
+        }
+
+        // 2. Si no estaba en caché (Cache Miss), consultar la base de datos y cachear por 60s
+        if (incidencias == null)
+        {
+            incidencias = await _context.Incidencias
+                .Where(i => i.Estado == "Abierta")
+                .OrderByDescending(i => i.FechaRegistro)
+                .ToListAsync();
+
+            _logger.LogInformation(">>> [CACHE MISS] Incidencias obtenidas desde BASE DE DATOS SQLITE. Almacenando en Redis (Clave: {Clave}) por 60 segundos.", CacheKeyListado);
+
+            var cacheOptions = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
+            };
+
+            var serialized = JsonSerializer.Serialize(incidencias);
+            await _cache.SetStringAsync(CacheKeyListado, serialized, cacheOptions);
+        }
+
+        ViewBag.OrigenLectura = origen;
         return View(incidencias);
     }
 
@@ -38,6 +84,12 @@ public class OperacionesController : Controller
             incidencia.Estado = "Cerrada";
             await _context.SaveChangesAsync();
             _logger.LogInformation("Incidencia {Id} cerrada satisfactoriamente en base de datos", id);
+
+            // Al cerrar una incidencia, invalidar la clave del listado antes de volver a consultarlo
+            await _cache.RemoveAsync(CacheKeyListado);
+            _logger.LogInformation(">>> [CACHE INVALIDATED] Clave de listado {Clave} invalidada en Redis tras el cierre de incidencia {Id}", CacheKeyListado, id);
+            
+            TempData["Mensaje"] = $"Incidencia #{id} cerrada exitosamente e invalidada de la caché de Redis.";
         }
 
         return RedirectToAction(nameof(Incidencias));
