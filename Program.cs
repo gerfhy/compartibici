@@ -81,8 +81,9 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-// 5. Inyección de Servicio de Búsqueda con Algolia
+// 5. Inyección de Servicios Externos (Algolia Search y PieSocket WebSockets)
 builder.Services.AddHttpClient<IAlgoliaSearchService, AlgoliaSearchService>();
+builder.Services.AddHttpClient<IPieSocketService, PieSocketService>();
 
 builder.Services.AddControllersWithViews();
 

@@ -1,15 +1,19 @@
 @model IEnumerable<CompartiBici.Models.Incidencia>
 @{
-    ViewData["Title"] = "Incidencias Operativas - Búsqueda Algolia y Caché Redis";
+    ViewData["Title"] = "Incidencias Operativas - Algolia, Redis y PieHost";
 }
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
         <div>
-            <h1>Incidencias abiertas encontradas con consulta rápida</h1>
-            <p class="text-muted mb-0">Gestión y control de averías en estaciones de bicicletas compartidas.</p>
+            <h1>Incidencias abiertas (Búsqueda Algolia, Caché Redis y Tiempo Real PieHost)</h1>
+            <p class="text-muted mb-0">Control integral de averías: búsqueda inteligente, rendimiento en caché y sincronización en vivo.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span id="ws-status-badge" class="badge bg-secondary fs-6 py-2 px-3 shadow-sm">
+                🟡 Conectando WebSocket...
+            </span>
+
             @if (ViewBag.OrigenLectura == "REDIS (CACHÉ)")
             {
                 <span class="badge bg-success fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
@@ -28,11 +32,15 @@
                     🗄️ BASE DE DATOS (CACHÉ MISS)
                 </span>
             }
-            <span class="badge bg-primary fs-6 py-2 px-3">
+
+            <span class="badge bg-primary fs-6 py-2 px-3 shadow-sm">
                 Abiertas: <span id="contador-abiertas">@Model.Count()</span>
             </span>
         </div>
     </div>
+
+    <!-- Contenedor de Alertas en Tiempo Real -->
+    <div id="live-alert-container"></div>
 
     <!-- Barra de Búsqueda con Algolia -->
     <div class="card shadow-sm border-0 mb-4 bg-light">
@@ -95,7 +103,7 @@
                             <tr id="fila-vacia">
                                 <td colspan="7" class="text-center py-5 text-muted">
                                     <div class="fs-1 mb-2">🚲</div>
-                                    No se encontraron incidencias abiertas con el criterio solicitado.
+                                    No hay incidencias abiertas actualmente.
                                 </td>
                             </tr>
                         }
@@ -134,7 +142,7 @@
                                         @item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")
                                     </td>
                                     <td class="text-end pe-4">
-                                        <form asp-action="CerrarIncidencia" asp-route-id="@item.Id" method="post" class="d-inline">
+                                        <form asp-action="CerrarIncidencia" asp-route-id="@item.Id" method="post" class="d-inline form-cerrar">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                                 Cerrar Incidencia
                                             </button>
@@ -149,3 +157,164 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    (function () {
+        const clusterId = "@ViewBag.PieSocketCluster" || "free.blr2";
+        const apiKey = "@ViewBag.PieSocketApiKey" || "DNHnT7FNMDzgRPwTvT482A1mnvsx1t99rlRDX8oh";
+        const roomId = "@ViewBag.PieSocketRoom" || "incidencias_canal";
+
+        const badge = document.getElementById("ws-status-badge");
+        const contador = document.getElementById("contador-abiertas");
+        const alertContainer = document.getElementById("live-alert-container");
+        const tbody = document.getElementById("lista-incidencias-body");
+
+        let socket = null;
+        let isFirstConnection = true;
+
+        function mostrarAlerta(mensaje, tipo = "info") {
+            const alertDiv = document.createElement("div");
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;
+            alertDiv.role = "alert";
+            alertDiv.innerHTML = `
+                <strong>⚡ PieHost WebSocket:</strong> ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            alertContainer.prepend(alertDiv);
+            setTimeout(() => {
+                alertDiv.classList.remove("show");
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 6000);
+        }
+
+        // Consultar estado vigente al reconectar
+        async function sincronizarEstadoVigente() {
+            try {
+                const res = await fetch("/Operaciones/ObtenerIncidenciasJson");
+                if (res.ok) {
+                    const incidencias = await res.json();
+                    renderizarTabla(incidencias);
+                    contador.textContent = incidencias.length;
+                    mostrarAlerta("Estado vigente sincronizado tras reconexión.", "success");
+                }
+            } catch (err) {
+                console.error("Error al sincronizar estado vigente:", err);
+            }
+        }
+
+        function renderizarTabla(incidencias) {
+            tbody.innerHTML = "";
+            if (!incidencias || incidencias.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="fila-vacia">
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <div class="fs-1 mb-2">🚲</div>
+                            No hay incidencias abiertas actualmente.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            incidencias.forEach(item => {
+                const badgeColor = item.prioridad === "Alta" ? "danger" : (item.prioridad === "Media" ? "warning" : "info");
+                const row = document.createElement("tr");
+                row.id = `incidencia-row-${item.id}`;
+                row.innerHTML = `
+                    <td class="ps-4 fw-bold text-secondary">#${item.id}</td>
+                    <td><div class="fw-semibold text-dark">${item.estacion}</div></td>
+                    <td><span class="text-muted">${item.descripcion}</span></td>
+                    <td><span class="badge bg-${badgeColor}-subtle text-${badgeColor} border border-${badgeColor}-subtle px-2 py-1">${item.prioridad}</span></td>
+                    <td><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 estado-badge">${item.estado}</span></td>
+                    <td class="text-muted small">${new Date(item.fechaRegistro).toLocaleString()}</td>
+                    <td class="text-end pe-4">
+                        <form action="/Operaciones/CerrarIncidencia/${item.id}" method="post" class="d-inline form-cerrar">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Cerrar Incidencia</button>
+                        </form>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function procesarEvento(evento, data) {
+            if (evento === "IncidenciaActualizada" && data) {
+                const incidenciaId = data.Id || data.id;
+                const estado = data.Estado || data.estado;
+
+                if (estado === "Cerrada") {
+                    const row = document.getElementById(`incidencia-row-${incidenciaId}`);
+                    if (row) {
+                        row.classList.add("table-danger");
+                        row.style.transition = "all 0.6s ease";
+                        row.style.opacity = "0";
+
+                        setTimeout(() => {
+                            row.remove();
+                            const currentCount = parseInt(contador.textContent || "0");
+                            contador.textContent = Math.max(0, currentCount - 1);
+
+                            if (tbody.querySelectorAll("tr").length === 0) {
+                                renderizarTabla([]);
+                            }
+                        }, 600);
+
+                        mostrarAlerta(`Incidencia #${incidenciaId} cerrada en tiempo real por el supervisor.`, "warning");
+                    }
+                }
+            }
+        }
+
+        function conectarWebSocket() {
+            if (!apiKey) {
+                badge.className = "badge bg-danger fs-6 py-2 px-3 shadow-sm";
+                badge.textContent = "❌ ApiKey no disponible";
+                return;
+            }
+
+            const wsUrl = `wss://${clusterId}.piesocket.com/v4/${roomId}?api_key=${apiKey}&notify_self=1`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function () {
+                badge.className = "badge bg-success fs-6 py-2 px-3 shadow-sm";
+                badge.textContent = "🟢 PieHost En Vivo (WebSocket)";
+
+                if (!isFirstConnection) {
+                    // Al reconectar, consultar el estado vigente sin recargar la página
+                    sincronizarEstadoVigente();
+                }
+                isFirstConnection = false;
+            };
+
+            socket.onmessage = function (event) {
+                try {
+                    const parsed = JSON.parse(event.data);
+                    if (parsed.event && parsed.data) {
+                        procesarEvento(parsed.event, parsed.data);
+                    } else if (parsed.message) {
+                        const inner = typeof parsed.message === "string" ? JSON.parse(parsed.message) : parsed.message;
+                        if (inner.event && inner.data) {
+                            procesarEvento(inner.event, inner.data);
+                        }
+                    }
+                } catch (e) {
+                    console.log("Mensaje recibido en canal WebSocket:", event.data);
+                }
+            };
+
+            socket.onclose = function () {
+                badge.className = "badge bg-warning text-dark fs-6 py-2 px-3 shadow-sm";
+                badge.textContent = "🟡 Reconectando WebSocket...";
+                setTimeout(conectarWebSocket, 3000);
+            };
+
+            socket.onerror = function (err) {
+                console.error("Error en conexión WebSocket:", err);
+                socket.close();
+            };
+        }
+
+        conectarWebSocket();
+    })();
+</script>
+}

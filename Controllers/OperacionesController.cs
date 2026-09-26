@@ -13,6 +13,7 @@ public class OperacionesController : Controller
     private readonly ApplicationDbContext _context;
     private readonly IAlgoliaSearchService _algoliaService;
     private readonly IDistributedCache _cache;
+    private readonly IPieSocketService _pieSocketService;
     private readonly ILogger<OperacionesController> _logger;
 
     private const string CacheKeyListado = "incidencias_abiertas_listado";
@@ -21,18 +22,25 @@ public class OperacionesController : Controller
         ApplicationDbContext context,
         IAlgoliaSearchService algoliaService,
         IDistributedCache cache,
+        IPieSocketService pieSocketService,
         ILogger<OperacionesController> logger)
     {
         _context = context;
         _algoliaService = algoliaService;
         _cache = cache;
+        _pieSocketService = pieSocketService;
         _logger = logger;
     }
 
     // GET: /Operaciones/Incidencias?q=...
     public async Task<IActionResult> Incidencias(string? q)
     {
-        // Caso 1: Búsqueda con texto en Algolia (se consulta directamente sin usar caché de Redis)
+        // Pasar variables de configuración WebSocket para la conexión del cliente
+        ViewBag.PieSocketCluster = _pieSocketService.ClusterId;
+        ViewBag.PieSocketApiKey = _pieSocketService.ApiKey;
+        ViewBag.PieSocketRoom = _pieSocketService.RoomId;
+
+        // Caso 1: Búsqueda con texto en Algolia (consulta directa al servidor de búsqueda, sin usar caché de Redis)
         if (!string.IsNullOrWhiteSpace(q))
         {
             var hitIds = await _algoliaService.BuscarIncidenciasAsync(q);
@@ -44,12 +52,12 @@ public class OperacionesController : Controller
 
             ViewBag.Busqueda = q;
             ViewBag.OrigenLectura = "ALGOLIA DIRECTO";
-            _logger.LogInformation(">>> [ALGOLIA SEARCH DIRECTO] Consulta sin caché para '{Query}'. Resultados abiertos: {Count}", q, resultados.Count);
+            _logger.LogInformation(">>> [ALGOLIA SEARCH DIRECTO] Consulta sin caché para '{Query}'. Coincidencias abiertas en BD: {Count}", q, resultados.Count);
 
             return View(resultados);
         }
 
-        // Caso 2: Listado general (búsqueda vacía) cacheado por 60 segundos con Redis
+        // Caso 2: Listado general habitual cacheado por 60 segundos en Redis
         List<Incidencia>? incidencias = null;
         string origen = "BASE DE DATOS";
 
@@ -62,12 +70,12 @@ public class OperacionesController : Controller
                 if (incidencias != null)
                 {
                     origen = "REDIS (CACHÉ)";
-                    _logger.LogInformation(">>> [CACHE HIT] Incidencias obtenidas desde REDIS (Clave: {Clave}) con {Count} registros", CacheKeyListado, incidencias.Count);
+                    _logger.LogInformation(">>> [CACHE HIT] Incidencias abiertas obtenidas desde REDIS (Clave: {Clave}) con {Count} registros", CacheKeyListado, incidencias.Count);
                 }
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Error al deserializar caché de Redis. Se consultará la base de datos.");
+                _logger.LogWarning(ex, "Fallo al deserializar caché de Redis. Se consultará la base de datos.");
             }
         }
 
@@ -94,6 +102,7 @@ public class OperacionesController : Controller
     }
 
     // POST: /Operaciones/CerrarIncidencia/5
+    // Secuencia requerida: 1. Cierre en base -> 2. Invalidación en Redis -> 3. Publicación en PieHost
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CerrarIncidencia(int id)
@@ -101,21 +110,30 @@ public class OperacionesController : Controller
         var incidencia = await _context.Incidencias.FindAsync(id);
         if (incidencia != null && incidencia.Estado == "Abierta")
         {
+            // Paso 1: Cierre y persistencia en base de datos SQLite
             incidencia.Estado = "Cerrada";
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Incidencia {Id} cerrada satisfactoriamente en base de datos", id);
+            _logger.LogInformation(">>> [1. DB UPDATE] Incidencia {Id} cerrada y persistida en base de datos SQLite.", id);
 
-            // Al cerrar una incidencia, invalidar la clave del listado antes de volver a consultarlo
+            // Paso 2: Invalidación de la clave del listado en Redis antes de volver a consultarlo
             await _cache.RemoveAsync(CacheKeyListado);
-            _logger.LogInformation(">>> [CACHE INVALIDATED] Clave de listado {Clave} invalidada en Redis tras el cierre de incidencia {Id}", CacheKeyListado, id);
-            
-            TempData["Mensaje"] = $"Incidencia #{id} cerrada exitosamente e invalidada de la caché de Redis.";
+            _logger.LogInformation(">>> [2. REDIS INVALIDATION] Clave de listado '{Clave}' invalidada en Redis para asegurar consistencia.", CacheKeyListado);
+
+            // Paso 3: Publicación del evento en tiempo real hacia PieHost
+            await _pieSocketService.PublicarEventoAsync("IncidenciaActualizada", new
+            {
+                Id = id,
+                Estado = "Cerrada"
+            });
+            _logger.LogInformation(">>> [3. PIEHOST WEBSOCKET] Evento IncidenciaActualizada emitido a PieSocket para incidencia {Id}.", id);
+
+            TempData["Mensaje"] = $"Incidencia #{id} cerrada en base de datos, invalidada de Redis y notificada por WebSocket.";
         }
 
         return RedirectToAction(nameof(Incidencias));
     }
 
-    // GET: /Operaciones/ObtenerIncidenciasJson
+    // GET: /Operaciones/ObtenerIncidenciasJson (Utilizado para reconexión de WebSocket y consulta de estado vigente)
     [HttpGet]
     public async Task<IActionResult> ObtenerIncidenciasJson()
     {
