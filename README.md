@@ -1,5 +1,4 @@
 # 🚲 Plataforma de Incidencias Operativas - CompartiBici
-**Examen Parcial: Arquitectura de Servicios Distribuidos, Control de Versiones Git y Despliegue en Render**
 
 ---
 
