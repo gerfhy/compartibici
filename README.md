@@ -5,6 +5,7 @@
 
 ## 📌 1. Información General del Proyecto
 * **Repositorio GitHub:** [https://github.com/gerfhy/compartibici](https://github.com/gerfhy/compartibici)
+* **URL Pública en Producción (Render):** [https://compartibici.onrender.com/](https://compartibici.onrender.com/)
 * **Stack Tecnológico:** ASP.NET Core (.NET 10) + EF Core SQLite + ASP.NET Identity con Roles
 * **Servicios Distribuidos Integrados:**
   1. **Algolia Search:** Búsqueda en servidor sobre índice `incidencias` con filtrado de registros abiertos en base de datos.

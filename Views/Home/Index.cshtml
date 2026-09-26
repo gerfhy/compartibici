@@ -1,8 +1,191 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Movilidad Sostenible y Control Operativo";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="py-4">
+    <!-- Hero Main Headline -->
+    <div class="text-center my-4">
+        <h1 class="font-display display-1 fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: -0.01em; line-height: 0.95;">
+            MOVILIDAD SOSTENIBLE<br />
+            COMIENZA AQUÍ <span class="brand-asterisk">✱</span> COMPARTIBICI
+        </h1>
+    </div>
+
+    <!-- Main Showcase Grid (Inspired by Aerion) -->
+    <div class="row align-items-center mt-4 g-4 position-relative">
+        
+        <!-- Left Column: CTA & Features -->
+        <div class="col-lg-3 col-md-6 order-2 order-lg-1">
+            <div class="d-flex flex-column gap-4">
+                <div>
+                    <div class="d-inline-flex p-3 rounded-4 bg-white shadow-sm mb-3 border">
+                        <span class="fs-1">🚲</span>
+                    </div>
+                    <h3 class="fw-bold fs-4 text-dark mb-2">Pedaleo sin límites</h3>
+                    <p class="text-muted small mb-3">
+                        Monitoreo continuo de incidencias, alta disponibilidad con Redis Cloud y actualización en tiempo real con WebSockets.
+                    </p>
+                    <a asp-controller="Operaciones" asp-action="Incidencias" class="btn-cb-neon">
+                        Explorar Incidencias ➔
+                    </a>
+                </div>
+
+                <div class="cb-card p-3 d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3 bg-light fs-3">🔧</div>
+                    <div>
+                        <div class="text-muted small fw-semibold">Gestión Inmediata</div>
+                        <div class="fw-bold text-dark fs-6">Control y Cierre de Averías</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="cb-pill-tag dark">+ #Championship2026</span>
+                    <span class="cb-pill-tag neon">#E-Bikes</span>
+                    <span class="cb-pill-tag">#AlgoliaFast</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: Bicycle Showcase Visual -->
+        <div class="col-lg-6 order-1 order-lg-2 text-center position-relative my-3 my-lg-0">
+            <div class="position-relative d-inline-block w-100" style="max-width: 580px;">
+                <!-- Modern Stylized SVG Bicycle Graphic with Interactive Callouts -->
+                <svg viewBox="0 0 600 400" class="w-100 h-auto" style="filter: drop-shadow(0 20px 30px rgba(17,24,54,0.12));">
+                    <defs>
+                        <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4d47e5" />
+                            <stop offset="100%" stop-color="#3043d8" />
+                        </linearGradient>
+                        <radialGradient id="neonGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#e4fb38" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="#eaf0f6" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Background Soft Glow -->
+                    <circle cx="300" cy="220" r="180" fill="url(#neonGlow)" />
+
+                    <!-- Wheels -->
+                    <!-- Rear Wheel -->
+                    <circle cx="150" cy="260" r="85" fill="none" stroke="#111836" stroke-width="10" />
+                    <circle cx="150" cy="260" r="77" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="4 2" />
+                    <circle cx="150" cy="260" r="14" fill="#4d47e5" />
+                    <!-- Spokes Rear -->
+                    <path d="M 150 175 L 150 345 M 65 260 L 235 260 M 90 200 L 210 320 M 90 320 L 210 200" stroke="#cbd5e1" stroke-width="1.5" />
+
+                    <!-- Front Wheel -->
+                    <circle cx="450" cy="260" r="85" fill="none" stroke="#111836" stroke-width="10" />
+                    <circle cx="450" cy="260" r="77" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="4 2" />
+                    <circle cx="450" cy="260" r="14" fill="#4d47e5" />
+                    <!-- Spokes Front -->
+                    <path d="M 450 175 L 450 345 M 365 260 L 535 260 M 390 200 L 510 320 M 390 320 L 510 200" stroke="#cbd5e1" stroke-width="1.5" />
+
+                    <!-- Frame Tube Geometry (Aero Racing Frame) -->
+                    <!-- Chainstay -->
+                    <line x1="150" y1="260" x2="280" y2="260" stroke="#4d47e5" stroke-width="14" stroke-linecap="round" />
+                    <!-- Seatstay -->
+                    <line x1="150" y1="260" x2="250" y2="150" stroke="url(#frameGrad)" stroke-width="12" stroke-linecap="round" />
+                    <!-- Seat Tube -->
+                    <line x1="280" y1="260" x2="250" y2="150" stroke="url(#frameGrad)" stroke-width="16" stroke-linecap="round" />
+                    <!-- Seatpost & Saddle -->
+                    <line x1="250" y1="150" x2="242" y2="115" stroke="#111836" stroke-width="10" stroke-linecap="round" />
+                    <path d="M 215 115 Q 245 105 275 118 Q 245 125 215 115 Z" fill="#111836" />
+
+                    <!-- Bottom Bracket to Headtube (Down Tube) -->
+                    <line x1="280" y1="260" x2="420" y2="140" stroke="url(#frameGrad)" stroke-width="20" stroke-linecap="round" />
+                    <!-- Top Tube -->
+                    <line x1="250" y1="150" x2="420" y2="140" stroke="url(#frameGrad)" stroke-width="14" stroke-linecap="round" />
+                    <!-- Brand text on Down Tube -->
+                    <text x="320" y="215" fill="#e4fb38" font-family="'Oswald', sans-serif" font-weight="700" font-size="14" transform="rotate(-40 320 215)" letter-spacing="2">COMPARTIBICI</text>
+
+                    <!-- Fork & Handlebar -->
+                    <line x1="420" y1="140" x2="450" y2="260" stroke="url(#frameGrad)" stroke-width="14" stroke-linecap="round" />
+                    <line x1="420" y1="140" x2="425" y2="110" stroke="#111836" stroke-width="10" stroke-linecap="round" />
+                    <!-- Drop Handlebars -->
+                    <path d="M 410 110 L 440 110 Q 455 110 455 125 Q 455 145 435 145" fill="none" stroke="#111836" stroke-width="8" stroke-linecap="round" />
+
+                    <!-- Crankset / Chainring -->
+                    <circle cx="280" cy="260" r="26" fill="#111836" stroke="#e4fb38" stroke-width="3" />
+                    <circle cx="280" cy="260" r="8" fill="#ffffff" />
+                </svg>
+
+                <!-- Callout Badges -->
+                <div class="position-absolute" style="bottom: 12%; left: 8%;">
+                    <div class="cb-pill-tag bg-white shadow-sm border py-1 px-3 small">
+                        Neumático Reforzado ➔
+                    </div>
+                </div>
+                <div class="position-absolute" style="top: 15%; right: 12%;">
+                    <div class="cb-pill-tag bg-white shadow-sm border py-1 px-3 small">
+                        ⚡ Telemetría IoT
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Telemetry Dashboard & Tech Highlights -->
+        <div class="col-lg-3 col-md-6 order-3">
+            <div class="d-flex flex-column gap-3">
+                <!-- Tech Highlight Circle -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 68px; height: 68px; background-color: var(--cb-neon);">
+                        <span class="fs-2">⚡</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark fs-5">Tech that moves you</div>
+                        <div class="text-muted small">Next-Gen Architecture</div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Racing Card (Cobalt Blue) -->
+                <div class="cb-card-telemetry shadow-lg mt-2">
+                    <div class="d-flex justify-content-between text-uppercase small text-white-50 mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                        <span>Fecha</span>
+                        <span>Hora</span>
+                        <span>Red Operativa</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold text-white mb-3" style="font-size: 0.95rem;">
+                        <span>25/09/26</span>
+                        <span>20:30 hrs</span>
+                        <span class="text-warning">42 Estaciones</span>
+                    </div>
+
+                    <!-- Mini SVG Track Illustration -->
+                    <div class="my-3 py-2 text-center border-top border-bottom border-white-50">
+                        <svg viewBox="0 0 200 65" class="w-100" style="max-height: 55px;">
+                            <path d="M 15 45 Q 40 10 70 30 T 130 25 T 185 40" fill="none" stroke="#e4fb38" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 3" />
+                            <circle cx="15" cy="45" r="5" fill="#ffffff" />
+                            <circle cx="185" cy="40" r="6" fill="#e4fb38" />
+                            <text x="175" y="25" fill="#ffffff" font-size="10" font-weight="bold">🏁</text>
+                        </svg>
+                        <div class="small text-white-50 mt-1" style="font-size: 0.7rem;">Sincronizado vía PieHost WebSocket</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-1">
+                        <span class="badge bg-white text-dark rounded-pill px-3 py-2 fw-bold" style="font-size: 0.75rem;">
+                            🟢 350+ Bicis en Línea
+                        </span>
+                        <span class="text-white-50 small">Render Web Service</span>
+                    </div>
+                </div>
+
+                <!-- Quick Action Card -->
+                <div class="cb-card p-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle border border-2 border-dark" style="width: 44px; height: 44px;">
+                            <span class="fs-5">▶</span>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark fs-6 text-uppercase" style="letter-spacing: 0.04em;">Ver en Vivo</div>
+                            <div class="text-muted small">Panel de Incidencias</div>
+                        </div>
+                    </div>
+                    <a asp-controller="Operaciones" asp-action="Incidencias" class="btn btn-sm btn-dark rounded-pill px-3">
+                        Ir
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>

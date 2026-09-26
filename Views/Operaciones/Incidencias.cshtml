@@ -1,159 +1,170 @@
 @model IEnumerable<CompartiBici.Models.Incidencia>
 @{
-    ViewData["Title"] = "Incidencias Operativas - Algolia, Redis y PieHost";
+    ViewData["Title"] = "Centro Operativo de Incidencias";
 }
 
-<div class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom gap-2">
+<div class="py-4">
+    <!-- Header with Aerion Typography -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
         <div>
-            <h1>Incidencias abiertas (Búsqueda Algolia, Caché Redis y Tiempo Real PieHost)</h1>
-            <p class="text-muted mb-0">Control integral de averías: búsqueda inteligente, rendimiento en caché y sincronización en vivo.</p>
+            <div class="text-uppercase small fw-bold text-muted mb-1" style="letter-spacing: 0.1em;">
+                <span class="brand-asterisk">✱</span> Plataforma de Telemetría y Operaciones
+            </div>
+            <h1 class="font-display fw-bold display-5 text-dark mb-0" style="letter-spacing: -0.01em;">Incidencias abiertas (Búsqueda Algolia, Caché Redis y Tiempo Real PieHost)</h1>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <span id="ws-status-badge" class="badge bg-secondary fs-6 py-2 px-3 shadow-sm">
-                🟡 Conectando WebSocket...
+            <!-- WebSocket Live Badge -->
+            <span id="ws-status-badge" class="cb-pill-tag bg-white shadow-sm border py-2 px-3">
+                <span class="spinner-grow spinner-grow-sm text-warning me-2" role="status" style="width: 10px; height: 10px;"></span>
+                Conectando WebSocket...
             </span>
 
+            <!-- Redis Cache Status Badge -->
             @if (ViewBag.OrigenLectura == "REDIS (CACHÉ)")
             {
-                <span class="badge bg-success fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
-                    ⚡ REDIS (CACHÉ HIT - TTL 60s)
+                <span class="cb-pill-tag neon shadow-sm py-2 px-3 fw-bold" id="cache-status-badge">
+                    ⚡ REDIS CLOUD (HIT - 60s)
                 </span>
             }
             else if (ViewBag.OrigenLectura == "ALGOLIA DIRECTO")
             {
-                <span class="badge bg-info text-dark fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
+                <span class="cb-pill-tag blue shadow-sm py-2 px-3 fw-bold" id="cache-status-badge">
                     🔍 ALGOLIA DIRECTO (SIN CACHÉ)
                 </span>
             }
             else
             {
-                <span class="badge bg-secondary fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
-                    🗄️ BASE DE DATOS (CACHÉ MISS)
+                <span class="cb-pill-tag dark shadow-sm py-2 px-3 fw-bold" id="cache-status-badge">
+                    🗄️ SQLITE (CACHÉ MISS)
                 </span>
             }
 
-            <span class="badge bg-primary fs-6 py-2 px-3 shadow-sm">
-                Abiertas: <span id="contador-abiertas">@Model.Count()</span>
+            <!-- Open Incidents Counter Badge -->
+            <span class="cb-pill-tag dark shadow-sm py-2 px-3 fs-6">
+                Abiertas: <span id="contador-abiertas" class="badge rounded-pill bg-danger ms-1">@Model.Count()</span>
             </span>
         </div>
     </div>
 
-    <!-- Contenedor de Alertas en Tiempo Real -->
-    <div id="live-alert-container"></div>
-
-    <!-- Barra de Búsqueda con Algolia -->
-    <div class="card shadow-sm border-0 mb-4 bg-light">
-        <div class="card-body p-3">
-            <form method="get" asp-action="Incidencias" class="row g-2 align-items-center">
-                <div class="col-md-9 col-sm-8">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted">
-                            🔍
-                        </span>
-                        <input type="text" name="q" value="@ViewBag.Busqueda" class="form-control border-start-0" 
-                               placeholder="Buscar por estación o avería con Algolia (ej: Miraflores, freno, cadena)..." />
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
-                        Buscar
-                    </button>
-                    @if (!string.IsNullOrWhiteSpace(ViewBag.Busqueda as string))
-                    {
-                        <a asp-action="Incidencias" class="btn btn-outline-secondary">Limpiar</a>
-                    }
-                </div>
-            </form>
-            @if (!string.IsNullOrWhiteSpace(ViewBag.Busqueda as string))
-            {
-                <div class="mt-2 text-muted small">
-                    Resultados de búsqueda en Algolia para: <strong class="text-dark">"@ViewBag.Busqueda"</strong>
-                </div>
-            }
-        </div>
-    </div>
+    <!-- Live Toast Container -->
+    <div id="live-alert-container" class="mb-3"></div>
 
     @if (TempData["Mensaje"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Mensaje"]
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 alert-dismissible fade show" role="alert" style="background-color: #dcfce7; color: #166534;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-5">✓</span>
+                <div>@TempData["Mensaje"]</div>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tabla-incidencias">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">ID</th>
-                            <th>Estación</th>
-                            <th>Descripción</th>
-                            <th>Prioridad</th>
-                            <th>Estado</th>
-                            <th>Fecha de Registro</th>
-                            <th class="text-end pe-4">Acción</th>
+    <!-- Search Section (Algolia Engine) -->
+    <div class="cb-card p-3 p-lg-4 mb-4">
+        <form method="get" asp-action="Incidencias" class="row g-2 align-items-center">
+            <div class="col-md-9 col-sm-8">
+                <div class="cb-search-box">
+                    <span class="text-muted me-2 fs-5">🔍</span>
+                    <input type="text" name="q" value="@ViewBag.Busqueda" class="cb-search-input" 
+                           placeholder="Búsqueda instantánea con Algolia (ej: Miraflores, freno, cadena, batería)..." />
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-4 d-flex gap-2">
+                <button type="submit" class="btn-cb-neon w-100">
+                    Buscar Algolia
+                </button>
+                @if (!string.IsNullOrWhiteSpace(ViewBag.Busqueda as string))
+                {
+                    <a asp-action="Incidencias" class="btn-cb-outline">Limpiar</a>
+                }
+            </div>
+        </form>
+        @if (!string.IsNullOrWhiteSpace(ViewBag.Busqueda as string))
+        {
+            <div class="mt-3 ps-2 d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
+                    Filtro activo: <strong>"@ViewBag.Busqueda"</strong>
+                </span>
+                <span class="text-muted small">Resultados devueltos por el índice de Algolia y filtrados en BD.</span>
+            </div>
+        }
+    </div>
+
+    <!-- Incidents Table Card -->
+    <div class="cb-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="cb-table" id="tabla-incidencias">
+                <thead>
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Estación</th>
+                        <th>Descripción de Avería</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Registro</th>
+                        <th class="text-end pe-4">Acción Supervisor</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-incidencias-body">
+                    @if (!Model.Any())
+                    {
+                        <tr id="fila-vacia">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">🚲</div>
+                                <div class="fw-bold fs-5 text-dark">No hay averías abiertas pendientes</div>
+                                <div class="small text-muted">Todas las estaciones operan con normalidad.</div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody id="lista-incidencias-body">
-                        @if (!Model.Any())
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
                         {
-                            <tr id="fila-vacia">
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    <div class="fs-1 mb-2">🚲</div>
-                                    No hay incidencias abiertas actualmente.
+                            <tr id="incidencia-row-@item.Id">
+                                <td class="ps-4">
+                                    <span class="cb-pill-tag dark px-2 py-1 small">#@item.Id</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@item.Estacion</div>
+                                </td>
+                                <td>
+                                    <span class="text-secondary">@item.Descripcion</span>
+                                </td>
+                                <td>
+                                    @if (item.Prioridad == "Alta")
+                                    {
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold">Alta</span>
+                                    }
+                                    else if (item.Prioridad == "Media")
+                                    {
+                                        <span class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle px-3 py-1 fw-bold" style="background-color: #fef08a !important;">Media</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-info-subtle text-primary border border-info-subtle px-3 py-1 fw-bold">Baja</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1 fw-bold">
+                                        ● @item.Estado
+                                    </span>
+                                </td>
+                                <td class="text-muted small">
+                                    @item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form asp-action="CerrarIncidencia" asp-route-id="@item.Id" method="post" class="d-inline form-cerrar">
+                                        <button type="submit" class="btn-cb-close">
+                                            Cerrar Incidencia
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
-                        else
-                        {
-                            @foreach (var item in Model)
-                            {
-                                <tr id="incidencia-row-@item.Id">
-                                    <td class="ps-4 fw-bold text-secondary">#@item.Id</td>
-                                    <td>
-                                        <div class="fw-semibold text-dark">@item.Estacion</div>
-                                    </td>
-                                    <td>
-                                        <span class="text-muted">@item.Descripcion</span>
-                                    </td>
-                                    <td>
-                                        @if (item.Prioridad == "Alta")
-                                        {
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Alta</span>
-                                        }
-                                        else if (item.Prioridad == "Media")
-                                        {
-                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Media</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">Baja</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 estado-badge">
-                                            @item.Estado
-                                        </span>
-                                    </td>
-                                    <td class="text-muted small">
-                                        @item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <form asp-action="CerrarIncidencia" asp-route-id="@item.Id" method="post" class="d-inline form-cerrar">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                Cerrar Incidencia
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -175,10 +186,15 @@
 
         function mostrarAlerta(mensaje, tipo = "info") {
             const alertDiv = document.createElement("div");
-            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;
+            alertDiv.className = `alert alert-${tipo} border-0 shadow-sm rounded-4 alert-dismissible fade show`;
             alertDiv.role = "alert";
+            alertDiv.style.backgroundColor = tipo === "warning" ? "#fef3c7" : (tipo === "success" ? "#dcfce7" : "#e0e7ff");
+            alertDiv.style.color = tipo === "warning" ? "#92400e" : (tipo === "success" ? "#166534" : "#3730a3");
             alertDiv.innerHTML = `
-                <strong>⚡ PieHost WebSocket:</strong> ${mensaje}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-5">⚡</span>
+                    <div><strong>Tiempo Real (PieHost):</strong> ${mensaje}</div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
             alertContainer.prepend(alertDiv);
@@ -210,26 +226,32 @@
                     <tr id="fila-vacia">
                         <td colspan="7" class="text-center py-5 text-muted">
                             <div class="fs-1 mb-2">🚲</div>
-                            No hay incidencias abiertas actualmente.
+                            <div class="fw-bold fs-5 text-dark">No hay averías abiertas pendientes</div>
+                            <div class="small text-muted">Todas las estaciones operan con normalidad.</div>
                         </td>
                     </tr>`;
                 return;
             }
 
             incidencias.forEach(item => {
-                const badgeColor = item.prioridad === "Alta" ? "danger" : (item.prioridad === "Media" ? "warning" : "info");
+                let badgeClass = "bg-info-subtle text-primary border-info-subtle";
+                if (item.prioridad === "Alta") badgeClass = "bg-danger-subtle text-danger border-danger-subtle";
+                else if (item.prioridad === "Media") badgeClass = "bg-warning-subtle text-dark border-warning-subtle";
+
                 const row = document.createElement("tr");
                 row.id = `incidencia-row-${item.id}`;
                 row.innerHTML = `
-                    <td class="ps-4 fw-bold text-secondary">#${item.id}</td>
-                    <td><div class="fw-semibold text-dark">${item.estacion}</div></td>
-                    <td><span class="text-muted">${item.descripcion}</span></td>
-                    <td><span class="badge bg-${badgeColor}-subtle text-${badgeColor} border border-${badgeColor}-subtle px-2 py-1">${item.prioridad}</span></td>
-                    <td><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 estado-badge">${item.estado}</span></td>
+                    <td class="ps-4">
+                        <span class="cb-pill-tag dark px-2 py-1 small">#${item.id}</span>
+                    </td>
+                    <td><div class="fw-bold text-dark">${item.estacion}</div></td>
+                    <td><span class="text-secondary">${item.descripcion}</span></td>
+                    <td><span class="badge rounded-pill ${badgeClass} border px-3 py-1 fw-bold">${item.prioridad}</span></td>
+                    <td><span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1 fw-bold">● ${item.estado}</span></td>
                     <td class="text-muted small">${new Date(item.fechaRegistro).toLocaleString()}</td>
                     <td class="text-end pe-4">
                         <form action="/Operaciones/CerrarIncidencia/${item.id}" method="post" class="d-inline form-cerrar">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Cerrar Incidencia</button>
+                            <button type="submit" class="btn-cb-close">Cerrar Incidencia</button>
                         </form>
                     </td>
                 `;
@@ -245,8 +267,8 @@
                 if (estado === "Cerrada") {
                     const row = document.getElementById(`incidencia-row-${incidenciaId}`);
                     if (row) {
-                        row.classList.add("table-danger");
                         row.style.transition = "all 0.6s ease";
+                        row.style.backgroundColor = "#fee2e2";
                         row.style.opacity = "0";
 
                         setTimeout(() => {
@@ -259,7 +281,7 @@
                             }
                         }, 600);
 
-                        mostrarAlerta(`Incidencia #${incidenciaId} cerrada en tiempo real por el supervisor.`, "warning");
+                        mostrarAlerta(`Incidencia #${incidenciaId} fue cerrada en tiempo real por el supervisor.`, "warning");
                     }
                 }
             }
@@ -267,7 +289,7 @@
 
         function conectarWebSocket() {
             if (!apiKey) {
-                badge.className = "badge bg-danger fs-6 py-2 px-3 shadow-sm";
+                badge.className = "cb-pill-tag bg-white text-danger border py-2 px-3 shadow-sm";
                 badge.textContent = "❌ ApiKey no disponible";
                 return;
             }
@@ -276,11 +298,10 @@
             socket = new WebSocket(wsUrl);
 
             socket.onopen = function () {
-                badge.className = "badge bg-success fs-6 py-2 px-3 shadow-sm";
-                badge.textContent = "🟢 PieHost En Vivo (WebSocket)";
+                badge.className = "cb-pill-tag neon shadow-sm py-2 px-3 fw-bold";
+                badge.innerHTML = `<span class="live-pulse-dot me-2"></span>PieHost En Vivo`;
 
                 if (!isFirstConnection) {
-                    // Al reconectar, consultar el estado vigente sin recargar la página
                     sincronizarEstadoVigente();
                 }
                 isFirstConnection = false;
@@ -298,13 +319,13 @@
                         }
                     }
                 } catch (e) {
-                    console.log("Mensaje recibido en canal WebSocket:", event.data);
+                    console.log("Mensaje WebSocket recibido:", event.data);
                 }
             };
 
             socket.onclose = function () {
-                badge.className = "badge bg-warning text-dark fs-6 py-2 px-3 shadow-sm";
-                badge.textContent = "🟡 Reconectando WebSocket...";
+                badge.className = "cb-pill-tag bg-white text-warning border py-2 px-3 shadow-sm";
+                badge.innerHTML = `🟡 Reconectando WebSocket...`;
                 setTimeout(conectarWebSocket, 3000);
             };
 
