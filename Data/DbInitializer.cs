@@ -18,7 +18,7 @@ public static class DbInitializer
             await roleManager.CreateAsync(new IdentityRole(roleName));
         }
 
-        // 2. Crear usuario Supervisor por defecto
+        // 2. Crear o actualizar usuario Supervisor por defecto
         var supervisorEmail = "supervisor@compartibici.com";
         var supervisorUser = await userManager.FindByEmailAsync(supervisorEmail);
         if (supervisorUser == null)
@@ -27,10 +27,27 @@ public static class DbInitializer
             {
                 UserName = supervisorEmail,
                 Email = supervisorEmail,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                LockoutEnabled = false
             };
             var result = await userManager.CreateAsync(supervisorUser, "Admin123!");
             if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(supervisorUser, roleName);
+            }
+        }
+        else
+        {
+            // Forzar reinicio de contraseña y desbloqueo para garantizar acceso
+            supervisorUser.EmailConfirmed = true;
+            supervisorUser.LockoutEnabled = false;
+            supervisorUser.LockoutEnd = null;
+            supervisorUser.AccessFailedCount = 0;
+            var token = await userManager.GeneratePasswordResetTokenAsync(supervisorUser);
+            await userManager.ResetPasswordAsync(supervisorUser, token, "Admin123!");
+            await userManager.UpdateAsync(supervisorUser);
+
+            if (!await userManager.IsInRoleAsync(supervisorUser, roleName))
             {
                 await userManager.AddToRoleAsync(supervisorUser, roleName);
             }
