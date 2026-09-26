@@ -91,49 +91,58 @@ Todas las ramas (`feature/busqueda-algolia`, `feature/cache-redis`, `feature/web
 
 ## ⚡ 4. Servicios Configurados y Variables de Entorno
 
-### Configuración para Render (Copiar y Pegar en Environment Variables)
+### Plantilla de Variables de Entorno para Producción (Render Dashboard)
 ```env
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__DefaultConnection=Data Source=/var/data/app.db
-Redis__ConnectionString=redis://default:RYce7mVimFAZpuRaM5KQ6CNO8WIV61Lk@dapper-teaberry-sidewalk-15613.db.redis.io:10824
-PieSocket__ClusterId=free.blr2
-PieSocket__ApiKey=DNHnT7FNMDzgRPwTvT482A1mnvsx1t99rlRDX8oh
-PieSocket__Secret=OqV8j8cJzfn4TWJbqbwMAyhXLoQRckqU
+Redis__ConnectionString=redis://default:<PASSWORD>@<HOST>:<PORT>
+PieSocket__ClusterId=<CLUSTER_ID>
+PieSocket__ApiKey=<API_KEY>
+PieSocket__Secret=<SECRET>
 PieSocket__RoomId=incidencias_canal
-Algolia__ApplicationId=YKB1BBI5WH
-Algolia__SearchApiKey=538818a359ee8e43b705e51c3c6f34c5
-Algolia__ApiKey=538818a359ee8e43b705e51c3c6f34c5
-Algolia__WriteApiKey=1a491ca1eeeff6a0f903b9858939c70d
+Algolia__ApplicationId=<APP_ID>
+Algolia__SearchApiKey=<SEARCH_API_KEY>
+Algolia__ApiKey=<SEARCH_API_KEY>
+Algolia__WriteApiKey=<WRITE_API_KEY>
 Algolia__IndexName=incidencias
 ```
 
 ---
 
-## 🧪 5. Guía de Pruebas y Evidencia de Evaluación
+## 🧪 5. Guía de Pruebas y Evidencia de Evaluación en Render
 
-### A. Prueba de Algolia (Pregunta 1)
-1. Ingresar a `/Operaciones/Incidencias`.
-2. Escribir `Miraflores` o `freno` en el buscador y pulsar **Buscar**.
-3. El servidor consulta la API de Algolia y retorna exclusivamente las incidencias abiertas que coincidan.
-4. Si se busca `Amistad` (incidencia cerrada #6), el sistema no la presenta.
+**URL del Despliegue en Vivo:** [https://compartibici.onrender.com/](https://compartibici.onrender.com/)  
+**Credenciales de Supervisor:** `supervisor@compartibici.com` / `Admin123!`
 
-### B. Prueba de Redis Cloud (Pregunta 2)
-1. Al acceder a `/Operaciones/Incidencias` sin término de búsqueda:
-   * La primera petición genera un log `>>> [CACHE MISS]` y muestra la insignia `🗄️ BASE DE DATOS (CACHÉ MISS)`.
-   * Las peticiones subsecuentes dentro de los 60 segundos generan logs `>>> [CACHE HIT]` y muestran la insignia `⚡ REDIS (CACHÉ HIT - TTL 60s)`.
-2. Al pulsar **Cerrar Incidencia**:
-   * El log emite `>>> [2. REDIS INVALIDATION]` y la clave es removida inmediatamente.
-   * La recarga posterior resulta en un nuevo `CACHE MISS` con los datos actualizados.
+### 📸 Evidencia Visual de Ejecución en Vivo
 
-### C. Prueba de WebSockets con PieHost (Pregunta 3)
-1. Abrir dos navegadores o una ventana normal y otra en modo incógnito en `/Operaciones/Incidencias`.
-2. Ambos mostrarán la insignia `🟢 PieHost En Vivo (WebSocket)`.
-3. En la sesión A, pulsar **Cerrar Incidencia** en una avería.
-4. En la sesión B, sin recargar la pantalla:
-   * La fila correspondiente se desvanece suavemente con animación roja y desaparece.
-   * El contador de incidencias abiertas disminuye en tiempo real.
-   * Aparece una alerta interactiva indicando el ID de la incidencia cerrada.
-5. Si se simula desconexión de red y reconexión, la pantalla invoca automáticamente `/Operaciones/ObtenerIncidenciasJson` y sincroniza el estado vigente.
+#### 1. Portada y Experiencia de Usuario (Rediseño Aerion)
+* **Ruta:** `/`
+* Acceso directo para evaluadores y supervisores con indicadores de servicios activos (Algolia, Redis Cloud y PieHost).
+![01 Portada Aerion](docs/screenshots/01_home_aerion.png)
+
+#### 2. Autenticación Segura de Supervisor
+* **Ruta:** `/Identity/Account/Login?returnUrl=%2FOperaciones%2FIncidencias`
+* Flujo de autenticación que redirige de inmediato al centro operativo sin pantallas intermedias confusas.
+![02 Login Supervisor](docs/screenshots/02_login_supervisor.png)
+
+#### 3. Caché de Alto Rendimiento con Redis Cloud
+* **Ruta:** `/Operaciones/Incidencias`
+* Al cargar por segunda vez dentro del TTL de 60 segundos, se comprueba el `⚡ REDIS CLOUD (HIT - 60s)` y el indicador activo `🟢 PieHost En Vivo`.
+![03 Operaciones Redis Hit](docs/screenshots/03_operaciones_redis_hit.png)
+
+#### 4. Búsqueda Instantánea con Algolia (Pregunta 1)
+* **Ruta:** `/Operaciones/Incidencias?q=Miraflores`
+* La consulta busca en el índice de Algolia, mostrando la insignia `🔍 ALGOLIA DIRECTO (SIN CACHÉ)` y filtrando exclusivamente las averías abiertas coincidentes.
+![04 Operaciones Algolia Search](docs/screenshots/04_operaciones_algolia_search.png)
+
+#### 5. Cierre de Avería, Invalidación de Caché y WebSocket PieHost (Preguntas 2 y 3)
+* **Ruta:** `/Operaciones/Incidencias`
+* Al pulsar **Cerrar Incidencia**:
+  1. Se actualiza el estado en SQLite (`Estado = Cerrada`).
+  2. Se invalida la clave en Redis (`🗄️ SQLITE (CACHÉ MISS)` al regenerarse la lista).
+  3. Se emite evento en tiempo real vía WebSocket con PieHost (`🟢 PieHost En Vivo`), reduciendo el contador y notificando la acción.
+![05 Operaciones Cierre e Invalidación](docs/screenshots/05_operaciones_cierre_invalidacion.png)
 
 ---
 
@@ -141,5 +150,6 @@ Algolia__IndexName=incidencias
 1. Conectar el repositorio `https://github.com/gerfhy/compartibici` en Render.
 2. Crear un **Web Service** seleccionando **Docker**.
 3. Agregar un disco persistente montado en `/var/data` (1 GB) para persistencia SQLite.
-4. Configurar las variables de entorno detalladas en la Sección 4.
-5. El servicio compilará automáticamente mediante el `Dockerfile` optimizado para .NET 10 y expondrá el puerto `$PORT` asignado dinámicamente.
+4. Configurar las variables de entorno detalladas en el panel seguro de Render.
+5. El servicio compila automáticamente mediante el `Dockerfile` optimizado para .NET 10 y expone el puerto `$PORT` asignado dinámicamente.
+
