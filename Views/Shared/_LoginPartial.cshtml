@@ -5,9 +5,12 @@
 <div class="d-flex align-items-center gap-2">
 @if (SignInManager.IsSignedIn(User))
 {
+    <a class="btn-cb-neon btn-sm py-2 px-3" asp-area="" asp-controller="Operaciones" asp-action="Incidencias">
+        <span>Ir a Incidencias</span> ➔
+    </a>
     <span class="cb-pill-tag dark me-1">
         <span class="live-pulse-dot me-2"></span>
-        @User.Identity?.Name
+        Supervisor
     </span>
     <form class="form-inline d-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
         <button type="submit" class="btn-cb-outline btn-sm">Salir</button>
@@ -15,9 +18,11 @@
 }
 else
 {
-    <a class="btn-cb-outline" asp-area="Identity" asp-page="/Account/Login">Acceder</a>
+    <a class="btn-cb-outline" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="/Operaciones/Incidencias">
+        Acceso Supervisor
+    </a>
     <a class="btn-cb-neon" asp-area="" asp-controller="Operaciones" asp-action="Incidencias">
-        <span>Panel Operativo</span> ➔
+        <span>Ver Incidencias</span> ➔
     </a>
 }
 </div>

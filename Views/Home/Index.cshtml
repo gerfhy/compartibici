@@ -5,10 +5,25 @@
 <div class="py-4">
     <!-- Hero Main Headline -->
     <div class="text-center my-4">
-        <h1 class="font-display display-1 fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: -0.01em; line-height: 0.95;">
+        <h1 class="font-display display-1 fw-bold text-uppercase mb-3 text-dark" style="letter-spacing: -0.01em; line-height: 0.95;">
             MOVILIDAD SOSTENIBLE<br />
             COMIENZA AQUÍ <span class="brand-asterisk">✱</span> COMPARTIBICI
         </h1>
+        
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 my-3">
+            <a asp-controller="Operaciones" asp-action="Incidencias" class="btn-cb-neon btn-lg fs-6 py-3 px-4 shadow">
+                <span>🚀 Abrir Panel de Incidencias Operativas</span> ➔
+            </a>
+            <span class="cb-pill-tag dark py-2 px-3">
+                🔑 Supervisor: <strong>supervisor@compartibici.com</strong> / <strong>Admin123!</strong>
+            </span>
+        </div>
+        
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
+            <span class="badge bg-white text-dark border rounded-pill px-3 py-2 fw-semibold">🔍 Algolia Search</span>
+            <span class="badge bg-white text-dark border rounded-pill px-3 py-2 fw-semibold">⚡ Redis Cloud (60s)</span>
+            <span class="badge bg-white text-dark border rounded-pill px-3 py-2 fw-semibold">🟢 PieHost WebSockets</span>
+        </div>
     </div>
 
     <!-- Main Showcase Grid (Inspired by Aerion) -->
