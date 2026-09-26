@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CompartiBici.Data;
+using CompartiBici.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,11 +81,14 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
+// 5. Inyección de Servicio de Búsqueda con Algolia
+builder.Services.AddHttpClient<IAlgoliaSearchService, AlgoliaSearchService>();
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// 4. Migraciones y Seed Automático
+// 6. Migraciones y Seed Automático
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -93,7 +97,7 @@ using (var scope = app.Services.CreateScope())
     await DbInitializer.SeedAsync(services);
 }
 
-// 5. Configurar Pipeline HTTP
+// 7. Configurar Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
