@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: compartibici-plataforma
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        value: Data Source=/var/data/app.db
+      - key: Redis__ConnectionString
+        value: redis://default:RYce7mVimFAZpuRaM5KQ6CNO8WIV61Lk@dapper-teaberry-sidewalk-15613.db.redis.io:10824
+      - key: PieSocket__ClusterId
+        value: free.blr2
+      - key: PieSocket__ApiKey
+        value: DNHnT7FNMDzgRPwTvT482A1mnvsx1t99rlRDX8oh
+      - key: PieSocket__Secret
+        value: OqV8j8cJzfn4TWJbqbwMAyhXLoQRckqU
+      - key: PieSocket__RoomId
+        value: incidencias_canal
+      - key: Algolia__ApplicationId
+        value: YKB1BBI5WH
+      - key: Algolia__SearchApiKey
+        value: 538818a359ee8e43b705e51c3c6f34c5
+      - key: Algolia__ApiKey
+        value: 538818a359ee8e43b705e51c3c6f34c5
+      - key: Algolia__WriteApiKey
+        value: 1a491ca1eeeff6a0f903b9858939c70d
+      - key: Algolia__IndexName
+        value: incidencias
