@@ -2,27 +2,51 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CompartiBici.Data;
 using CompartiBici.Models;
+using CompartiBici.Services;
 
 namespace CompartiBici.Controllers;
 
 public class OperacionesController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAlgoliaSearchService _algoliaService;
     private readonly ILogger<OperacionesController> _logger;
 
-    public OperacionesController(ApplicationDbContext context, ILogger<OperacionesController> logger)
+    public OperacionesController(
+        ApplicationDbContext context,
+        IAlgoliaSearchService algoliaService,
+        ILogger<OperacionesController> logger)
     {
         _context = context;
+        _algoliaService = algoliaService;
         _logger = logger;
     }
 
-    // GET: /Operaciones/Incidencias
-    public async Task<IActionResult> Incidencias()
+    // GET: /Operaciones/Incidencias?q=...
+    public async Task<IActionResult> Incidencias(string? q)
     {
-        var incidencias = await _context.Incidencias
-            .Where(i => i.Estado == "Abierta")
-            .OrderByDescending(i => i.FechaRegistro)
-            .ToListAsync();
+        List<Incidencia> incidencias;
+
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            // Con búsqueda vacía, presentar la lista habitual
+            incidencias = await _context.Incidencias
+                .Where(i => i.Estado == "Abierta")
+                .OrderByDescending(i => i.FechaRegistro)
+                .ToListAsync();
+        }
+        else
+        {
+            // El servidor consulta Algolia y muestra solo incidencias abiertas existentes en la base
+            var hitIds = await _algoliaService.BuscarIncidenciasAsync(q);
+
+            incidencias = await _context.Incidencias
+                .Where(i => hitIds.Contains(i.Id) && i.Estado == "Abierta")
+                .OrderByDescending(i => i.FechaRegistro)
+                .ToListAsync();
+
+            ViewBag.Busqueda = q;
+        }
 
         return View(incidencias);
     }
