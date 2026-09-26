@@ -1,16 +1,34 @@
 @model IEnumerable<CompartiBici.Models.Incidencia>
 @{
-    ViewData["Title"] = "Incidencias Operativas - Búsqueda Algolia";
+    ViewData["Title"] = "Incidencias Operativas - Búsqueda Algolia y Caché Redis";
 }
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
-            <h1>Incidencias abiertas encontradas</h1>
+            <h1>Incidencias abiertas encontradas con consulta rápida</h1>
             <p class="text-muted mb-0">Gestión y control de averías en estaciones de bicicletas compartidas.</p>
         </div>
-        <div>
-            <span class="badge bg-primary fs-6">
+        <div class="d-flex align-items-center gap-2">
+            @if (ViewBag.OrigenLectura == "REDIS (CACHÉ)")
+            {
+                <span class="badge bg-success fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
+                    ⚡ REDIS (CACHÉ HIT - TTL 60s)
+                </span>
+            }
+            else if (ViewBag.OrigenLectura == "ALGOLIA DIRECTO")
+            {
+                <span class="badge bg-info text-dark fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
+                    🔍 ALGOLIA DIRECTO (SIN CACHÉ)
+                </span>
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6 py-2 px-3 shadow-sm" id="cache-status-badge">
+                    🗄️ BASE DE DATOS (CACHÉ MISS)
+                </span>
+            }
+            <span class="badge bg-primary fs-6 py-2 px-3">
                 Abiertas: <span id="contador-abiertas">@Model.Count()</span>
             </span>
         </div>
