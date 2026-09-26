@@ -25,46 +25,46 @@
 ## 🌿 3. Control de Versiones: Ramas, Pull Requests y Resolución de Conflictos
 
 ### A. Ramas y Pull Requests Independientes
-Todas las ramas (`feature/busqueda-algolia`, `feature/cache-redis`, `feature/websocket-piehost`) nacieron del **mismo commit inicial de `main`** (`59ab7f8`) sin trabajo directo sobre `main`.
+Todas las ramas (`feature/busqueda-algolia`, `feature/cache-redis`, `feature/websocket-piehost`) nacieron del **mismo commit inicial de `main`** (`1a4cb63`) sin trabajo directo sobre `main`.
 
 | Pregunta / Feature | Rama de Desarrollo | Enlace de Pull Request | Commit de Implementación |
 | :--- | :--- | :--- | :--- |
-| **Pregunta 1: Búsqueda Algolia** | `feature/busqueda-algolia` | [Abrir / Ver PR #1](https://github.com/gerfhy/compartibici/pull/new/feature/busqueda-algolia) | `28fdce5` |
-| **Pregunta 2: Caché Redis** | `feature/cache-redis` | [Abrir / Ver PR #2](https://github.com/gerfhy/compartibici/pull/new/feature/cache-redis) | `99b4490` |
-| **Pregunta 3: WebSocket PieHost** | `feature/websocket-piehost` | [Abrir / Ver PR #3](https://github.com/gerfhy/compartibici/pull/new/feature/websocket-piehost) | `182fc9a` |
+| **Pregunta 1: Búsqueda Algolia** | `feature/busqueda-algolia` | [Abrir / Ver PR #1](https://github.com/gerfhy/compartibici/pull/new/feature/busqueda-algolia) | `b80df54` |
+| **Pregunta 2: Caché Redis** | `feature/cache-redis` | [Abrir / Ver PR #2](https://github.com/gerfhy/compartibici/pull/new/feature/cache-redis) | `3c0ee1c` |
+| **Pregunta 3: WebSocket PieHost** | `feature/websocket-piehost` | [Abrir / Ver PR #3](https://github.com/gerfhy/compartibici/pull/new/feature/websocket-piehost) | `122d41e` |
 
 ---
 
 ### B. Historial de Git (`git log --graph --oneline --all`)
 ```text
-*   c14cf24 Merge pull request #3 from gerfhy/feature/websocket-piehost
+*   5eaa572 Merge pull request #3 from gerfhy/feature/websocket-piehost
 |\  
-| *   a5b2729 Merge branch 'main' into feature/websocket-piehost: resolver conflicto integrando busqueda Algolia, cache Redis y tiempo real PieHost
+| *   6f5160f Merge branch 'main' into feature/websocket-piehost: resolver conflicto integrando busqueda Algolia, cache Redis y tiempo real PieHost
 | |\  
 | |/  
 |/|   
-* |   ccaef41 Merge pull request #2 from gerfhy/feature/cache-redis
+* |   e081681 Merge pull request #2 from gerfhy/feature/cache-redis
 |\ \  
-| * \   25ae79b Merge branch 'main' into feature/cache-redis: resolver conflicto integrando busqueda Algolia y cache Redis
+| * \   77e6beb Merge branch 'main' into feature/cache-redis: resolver conflicto integrando busqueda Algolia y cache Redis
 | |\ \  
 | |/ /  
 |/| |   
-* | |   13a7e2c Merge pull request #1 from gerfhy/feature/busqueda-algolia
+* | |   a1be076 Merge pull request #1 from gerfhy/feature/busqueda-algolia
 |\ \ \  
-| * | | 28fdce5 feat(pregunta-1): busqueda de incidencias con algolia y filtrado de abiertas
+| * | | b80df54 feat(pregunta-1): busqueda de incidencias con algolia y filtrado de abiertas
 |/ / /  
-| * / 99b4490 feat(pregunta-2): implementacion de cache distribuida con redis por 60s e invalidacion reactiva
+| * / 3c0ee1c feat(pregunta-2): implementacion de cache distribuida con redis por 60s e invalidacion reactiva
 |/ /  
-| * 182fc9a feat(pregunta-3): sincronizacion en tiempo real con websockets de piehost y actualizacion sin recarga
+| * 122d41e feat(pregunta-3): sincronizacion en tiempo real con websockets de piehost y actualizacion sin recarga
 |/  
-* 59ab7f8 feat: proyecto base de plataforma de incidencias con SQLite e Identity
+* 1a4cb63 feat: proyecto base de plataforma de incidencias con SQLite e Identity
 ```
 
 ---
 
 ### C. Explicación Técnica de las Resoluciones de Conflicto
 
-#### 1. Primer Conflicto: Fusión de `main` en `feature/cache-redis` (Commit `25ae79b`)
+#### 1. Primer Conflicto: Fusión de `main` en `feature/cache-redis` (Commit `77e6beb`)
 * **Línea en conflicto (Título compartido en `Incidencias.cshtml`):**
   * `main` traía: `<h1>Incidencias abiertas encontradas</h1>` (Algolia)
   * `feature/cache-redis` tenía: `<h1>Incidencias abiertas con consulta rápida</h1>` (Redis)
@@ -73,7 +73,7 @@ Todas las ramas (`feature/busqueda-algolia`, `feature/cache-redis`, `feature/web
   * Se respetó la regla: *«La búsqueda con texto de Algolia se consultará directamente, sin usar esta caché»*. Si `q` contiene texto, se consulta Algolia de forma directa sin Redis; si `q` es vacío, se consulta el listado general cacheado por 60 segundos en Redis.
 * **Conflicto en `Program.cs`:** Se mantuvieron registrados ambos servicios (`IAlgoliaSearchService` y `AddStackExchangeRedisCache`).
 
-#### 2. Segundo Conflicto: Fusión de `main` en `feature/websocket-piehost` (Commit `a5b2729`)
+#### 2. Segundo Conflicto: Fusión de `main` en `feature/websocket-piehost` (Commit `6f5160f`)
 * **Línea en conflicto (Título compartido en `Incidencias.cshtml`):**
   * `main` traía: `<h1>Incidencias abiertas encontradas con consulta rápida</h1>` (Algolia + Redis)
   * `feature/websocket-piehost` tenía: `<h1>Incidencias abiertas en tiempo real</h1>` (PieHost)
