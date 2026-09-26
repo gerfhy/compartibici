@@ -1,0 +1,28 @@
+## .NET Core
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+## SQLite
+*.db
+*.db-shm
+*.db-wal
+
+## Visual Studio / VS Code
+.vs/
+.vscode/
+*.ide/
+.idea/
+
+## OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## Environment & Secrets
+.env
+appsettings.Production.json

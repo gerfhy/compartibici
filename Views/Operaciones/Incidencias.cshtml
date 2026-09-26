@@ -1,0 +1,101 @@
+@model IEnumerable<CompartiBici.Models.Incidencia>
+@{
+    ViewData["Title"] = "Incidencias Operativas";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1>Incidencias abiertas</h1>
+            <p class="text-muted mb-0">Gestión y control de averías en estaciones de bicicletas compartidas.</p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-6">
+                Abiertas: <span id="contador-abiertas">@Model.Count()</span>
+            </span>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Mensaje"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tabla-incidencias">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Estación</th>
+                            <th>Descripción</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>Fecha de Registro</th>
+                            <th class="text-end pe-4">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-incidencias-body">
+                        @if (!Model.Any())
+                        {
+                            <tr id="fila-vacia">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No hay incidencias abiertas actualmente.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr id="incidencia-row-@item.Id">
+                                    <td class="ps-4 fw-bold text-secondary">#@item.Id</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@item.Estacion</div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">@item.Descripcion</span>
+                                    </td>
+                                    <td>
+                                        @if (item.Prioridad == "Alta")
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Alta</span>
+                                        }
+                                        else if (item.Prioridad == "Media")
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Media</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">Baja</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 estado-badge">
+                                            @item.Estado
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">
+                                        @item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <form asp-action="CerrarIncidencia" asp-route-id="@item.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                Cerrar Incidencia
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
